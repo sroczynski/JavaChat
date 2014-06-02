@@ -6,7 +6,7 @@ import java.net.Socket;
 
 /**
  * Servidor de chat responsável por ouvir conexões e guardar mensagens
- * @author Paulo Diovani Gonçalves <paulo@diovani.com>
+ * @author diovani
  *
  */
 public class ServidorChat extends Thread {
@@ -54,7 +54,7 @@ public class ServidorChat extends Thread {
             e.printStackTrace();
         }
 
-        start();
+        this.start();
     }
 
     /**
@@ -72,6 +72,10 @@ public class ServidorChat extends Thread {
         while (true) {
             try {
                 this.client = server.accept();
+
+                //Teste: Por hora, o server apenas recebe mensagems
+                MonitorChatConsole monitor = new MonitorChatConsole(this.client);
+                monitor.start();
             } catch (IOException e) {
                 e.printStackTrace();
             }
