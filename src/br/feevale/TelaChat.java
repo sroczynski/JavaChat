@@ -26,7 +26,7 @@ public class TelaChat extends JFrame {
 	private static final long serialVersionUID = 1L;
 
 	public enum TpTela { SERVIDOR, CLIENTE }
-	private JTextArea log;
+	private JTextArea timeline;
 	private JTextField mensagem;
 	
 	private Socket socket;
@@ -48,11 +48,11 @@ public class TelaChat extends JFrame {
 		
 		setLayout( null );
 
-		log = new JTextArea();
-		log.setLineWrap( true );
-		log.setEditable( false );
+		timeline = new JTextArea();
+		timeline.setLineWrap( true );
+		timeline.setEditable( false );
 		
-		JScrollPane sp = new JScrollPane( log );
+		JScrollPane sp = new JScrollPane( timeline );
 		sp.setBounds( 10, 10, 470, 300 );
 		getContentPane().add( sp );
 		
@@ -200,84 +200,10 @@ public class TelaChat extends JFrame {
 		} 
 	}
 
-	private class LeitorDeSocketData extends Thread {
-		
-		@Override
-		public void run() {
-			try {
-				InputStream is = socket.getInputStream();
-				DataInputStream dis = new DataInputStream( is );
-				
-				while( isVisible() ) {
-
-					String mensagem = dis.readUTF();
-					escreveNoLog( "Recebi: " + mensagem );
-				}
-			} catch ( Exception e) {
-				e.printStackTrace();
-			}
-		} 
-	}
-
-	private class LeitorDeSocketBrizola extends Thread {
-		
-		@Override
-		public void run() {
-			try {
-				InputStream is = socket.getInputStream();
-				StringBuilder buffer = new StringBuilder();
-
-				while( isVisible() ) {
-
-					if( is.available() > 0 ) {
-						System.out.println( "A" );
-						
-						int ch;
-						while( ( ch = is.read() ) != 255 ) {
-							System.out.println( "Recebi: " + ((char) ch) + " " + ch );
-							buffer.append( (char) ch );
-						}
-
-						String mensagem = buffer.toString();
-						escreveNoLog( "Recebi: " + mensagem );
-					}
-					
-					sleep( 50 );
-				}
-			} catch ( Exception e) {
-				e.printStackTrace();
-			}
-		} 
-	}
-
-	private class LeitorDeSocketSchneider extends Thread {
-		
-		@Override
-		public void run() {
-			try {
-				
-				while( isVisible() ) {
-					System.out.println( "A" );
-					
-					int tam = socket.getInputStream().read();
-					byte[] buffer = new byte[ tam ];
-					socket.getInputStream().read( buffer );
-
-					String mensagem = new String( buffer );
-					
-					escreveNoLog( "Recebi: " + mensagem );
-					
-				}
-				sleep( 10 );
-			} catch ( Exception e) {
-				e.printStackTrace();
-			}
-		} 
-	}
 	
 	private void escreveNoLog( String msg ) {
-		log.append( msg );
-		log.append( "\n" );
+		timeline.append( msg );
+		timeline.append( "\n" );
 	}
 
 	public void trataHandshake(JSONObject obj) throws JSONException {
