@@ -17,6 +17,7 @@ import javax.swing.JTextField;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+
 public class TelaChat extends JFrame {
 
 	/**
@@ -24,168 +25,157 @@ public class TelaChat extends JFrame {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public enum TpTela {
-		SERVIDOR, CLIENTE
-	}
-
-	private JTextArea timeline;
+	public enum TpTela { SERVIDOR, CLIENTE }
+	private JTextArea log;
 	private JTextField mensagem;
-
+	
 	private Socket socket;
 	private String meuNome;
 	private String outroNome;
-
-	public TelaChat(Socket socket, TpTela tipo, String meuNome)
-			throws JSONException {
-
+	
+	public TelaChat( Socket socket, TpTela tipo, String meuNome ) throws JSONException {
+		
 		this.socket = socket;
 		this.meuNome = meuNome;
-
-		if (tipo == TpTela.SERVIDOR) {
-			setBounds(10, 80, 500, 400);
-			setTitle("Servidor");
+		
+		if( tipo == TpTela.SERVIDOR ) {
+			setBounds( 10, 80, 500, 400 );
+			setTitle( "Servidor" );
 		} else {
-			setBounds(515, 80, 500, 400);
-			setTitle("Cliente");
+			setBounds( 515, 80, 500, 400 );
+			setTitle( "Cliente" );
 		}
+		
+		setLayout( null );
 
-		setLayout(null);
-
-		timeline = new JTextArea();
-		timeline.setLineWrap(true);
-		timeline.setEditable(false);
-
-		JScrollPane sp = new JScrollPane(timeline);
-		sp.setBounds(10, 10, 470, 300);
-		getContentPane().add(sp);
-
+		log = new JTextArea();
+		log.setLineWrap( true );
+		log.setEditable( false );
+		
+		JScrollPane sp = new JScrollPane( log );
+		sp.setBounds( 10, 10, 470, 300 );
+		getContentPane().add( sp );
+		
 		mensagem = new JTextField();
-		mensagem.setBounds(10, 320, 470, 23);
-		getContentPane().add(mensagem);
-
-		mensagem.addKeyListener(new KeyListener() {
+		mensagem.setBounds( 10, 320, 470, 23 );
+		getContentPane().add( mensagem );
+		
+		mensagem.addKeyListener( new KeyListener() {
+			
 			@Override
 			public void keyTyped(KeyEvent e) {
-				if (e.getKeyChar() == KeyEvent.VK_ENTER) {
+
+				if( e.getKeyChar() == KeyEvent.VK_ENTER ) {
 					enviaMensagem();
 				}
 			}
-
+			
 			@Override
-			public void keyReleased(KeyEvent e) {
-			}
-
+			public void keyReleased(KeyEvent e) {}
+			
 			@Override
-			public void keyPressed(KeyEvent e) {
-			}
-		});
-
-		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		setVisible(true);
-
-		System.out.println("Iniciando...");
+			public void keyPressed(KeyEvent e) {}
+		} );
 		
-		new ReadSocket().start();
+		setDefaultCloseOperation( DISPOSE_ON_CLOSE );
+		setVisible( true );
 
+		System.out.println( "Iniciando...");
+		new LeitorDeSocket().start();
+		
 		try {
-			Thread.sleep(100);
-		} catch (InterruptedException e1) {
-		}
-
+			Thread.sleep( 100 );
+		} catch (InterruptedException e1) {}
+		
 		enviaHandshake();
 	}
 
 	private void enviaHandshake() throws JSONException {
 
 		JSONObject obj = new JSONObject();
-		obj.put("tpTransacao", 1);
-		obj.put("meuNome", meuNome);
-
-		enviaTransacao(obj);
+		obj.put( "tpTransacao", 1 );
+		obj.put( "meuNome", meuNome );
+		
+		enviaTransacao( obj );
 	}
 
 	private void enviaTransacao(JSONObject obj) {
 
 		try {
 			OutputStream os = socket.getOutputStream();
-			DataOutputStream dos = new DataOutputStream(os);
+			DataOutputStream dos = new DataOutputStream( os );
 
-			dos.writeUTF(obj.toString());
+			dos.writeUTF( obj.toString() );
 			os.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
+		
 	}
 
-	
 	protected void enviaMensagem() {
 
 		String mensagemAEnviar = mensagem.getText();
-
-		mensagem.setText(null);
+		
+		mensagem.setText( null );
 		mensagem.requestFocusInWindow();
-
+		
 		try {
 			JSONObject obj = new JSONObject();
-			obj.put("tpTransacao", 2);
-			obj.put("msg", mensagemAEnviar);
+			obj.put( "tpTransacao", 2 );
+			obj.put( "msg", mensagemAEnviar );
 
-			enviaTransacao(obj);
-
-			escreveNoLog(meuNome + ": " + mensagemAEnviar);
-		} catch (Exception e) {
+			enviaTransacao( obj );
+			
+			escreveNoLog( meuNome + ": " + mensagemAEnviar );
+		} catch ( Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 
-
-	private class ReadSocket extends Thread {
-
+	private class LeitorDeSocket extends Thread {
+		
 		@Override
 		public void run() {
 			try {
 				InputStream is = socket.getInputStream();
-				DataInputStream dis = new DataInputStream(is);
-
-				while (isVisible()) {
+				DataInputStream dis = new DataInputStream( is );
+				
+				while( isVisible() ) {
 
 					String mensagem = dis.readUTF();
 
-					JSONObject obj = new JSONObject(mensagem);
+					JSONObject obj = new JSONObject( mensagem );
 
-					int tpTransacao = obj.getInt("tpTransacao");
+					int tpTransacao = obj.getInt( "tpTransacao" );
+					
+					switch( tpTransacao ) {
 
-					switch (tpTransacao) {
-
-					case 1:
-						trataHandshake(obj);
-						break;
-					case 2:
-						trataMensagem(obj);
-						break;
+						case 1: trataHandshake( obj ); break;
+						case 2: trataMensagem( obj ); break;
 					}
 				}
-			} catch (Exception e) {
+			} catch ( Exception e) {
 				e.printStackTrace();
 			}
-		}
+		} 
 	}
 
 	
-	private void escreveNoLog(String msg) {
-		timeline.append(msg);
-		timeline.append("\n");
+	
+	private void escreveNoLog( String msg ) {
+		log.append( msg );
+		log.append( "\n" );
 	}
 
 	public void trataHandshake(JSONObject obj) throws JSONException {
-		outroNome = obj.getString("meuNome");
+		outroNome = obj.getString( "meuNome" );
 	}
 
 	public void trataMensagem(JSONObject obj) throws JSONException {
 
-		String mensagem = obj.getString("msg");
-		escreveNoLog(outroNome + ": " + mensagem);
+		String mensagem = obj.getString( "msg" );
+		escreveNoLog( outroNome + ": " + mensagem );
 	}
 }
