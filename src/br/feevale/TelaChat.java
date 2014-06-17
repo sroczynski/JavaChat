@@ -118,6 +118,7 @@ public class TelaChat extends JFrame {
 
 	}
 
+	
 	protected void enviaMensagem() {
 
 		String mensagemAEnviar = mensagem.getText();
@@ -138,44 +139,7 @@ public class TelaChat extends JFrame {
 		}
 	}
 
-	protected void enviaMensagemBrizola() {
 
-		String mensagemAEnviar = mensagem.getText();
-
-		mensagem.setText(null);
-		mensagem.requestFocusInWindow();
-
-		try {
-			OutputStream os = socket.getOutputStream();
-
-			for (byte b : mensagemAEnviar.getBytes()) {
-				os.write(b);
-			}
-			os.write(-1);
-			os.flush();
-
-			escreveNoLog("Enviei: " + mensagemAEnviar);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	protected void enviaMensagemSchneider() {
-
-		String mensagemAEnviar = mensagem.getText();
-
-		mensagem.setText(null);
-		mensagem.requestFocusInWindow();
-
-		try {
-			socket.getOutputStream().write(mensagemAEnviar.getBytes().length);
-			socket.getOutputStream().write(mensagemAEnviar.getBytes());
-
-			escreveNoLog("Enviei: " + mensagemAEnviar);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 
 	private class ReadSocket extends Thread {
 
