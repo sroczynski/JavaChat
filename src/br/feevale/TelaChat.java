@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
@@ -31,6 +32,7 @@ public class TelaChat extends JFrame {
 	public enum TpTela {
 		SERVIDOR, CLIENTE
 	}
+
 	/*
 	 * Atributos de tela
 	 */
@@ -41,6 +43,9 @@ public class TelaChat extends JFrame {
 	/*
 	 * Outros atributos
 	 */
+
+	public JFileChooser fc;
+	public String file;
 	private Socket socket;
 	private String meuNome;
 	private String outroNome;
@@ -102,32 +107,49 @@ public class TelaChat extends JFrame {
 		arquivo.setBounds(10, 345, 150, 20);
 		getContentPane().add(arquivo);
 		arquivo.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				JOptionPane.showMessageDialog(null, "Enviar arquivo");
+				fc = new JFileChooser();
+				fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				int returnVal = fc.showOpenDialog(TelaChat.this);
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+
+					int confirma = JOptionPane.showConfirmDialog(null,
+							"Deseja enviar o arquivo:" + fc.getSelectedFile(),
+							"Atenção", JOptionPane.YES_NO_OPTION);
+
+					if (confirma == JOptionPane.YES_OPTION) {
+						// chama metodo para enviar o arquivo
+						mensagem.setText("Opening: " + fc.getSelectedFile());
+					} else {
+
+						mensagem.requestFocus(); // volta o foco para o campo de
+													// mensagem
+					}
+				}
+
 			}
 		});
-		
-		
+
 		/*
 		 * botão para chamar a atenção
 		 */
-		
+
 		atencao = new JButton("Chamar atenção");
 		atencao.setBounds(170, 345, 150, 20);
 		getContentPane().add(atencao);
 		atencao.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				JOptionPane.showMessageDialog(null, "Chamar atenção do usuário");
-				
+				JOptionPane
+						.showMessageDialog(null, "Chamar atenção do usuário");
 			}
 		});
-		
+
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setVisible(true);
 
