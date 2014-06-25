@@ -56,7 +56,6 @@ public class Main extends JFrame implements WindowListener {
 		getContentPane().add(btn);
 
 		btn.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent evt) {
 				conectar();
@@ -76,8 +75,7 @@ public class Main extends JFrame implements WindowListener {
 			new TelaChat(socket, TelaChat.TpTela.CLIENTE, nome.getText());
 			System.out.println("Meu socket: " + socket);
 		} catch (Exception e) {
-			JOptionPane.showMessageDialog(this, "Não foi possível conectar -> "
-					+ e.getMessage());
+			JOptionPane.showMessageDialog(this, "Não foi possível conectar -> " + e.getMessage());
 		}
 	}
 

@@ -19,7 +19,7 @@ public class ServidorChat extends Thread {
 
 	private Integer porta;
 
-	private Socket client;
+	private Socket cliente;
 
 	private ServerSocket server;
 
@@ -27,7 +27,6 @@ public class ServidorChat extends Thread {
 	 * Construtor privado para garantir o uso como singleton
 	 */
 	private ServidorChat() {
-		// empty
 	}
 
 	/**
@@ -72,20 +71,21 @@ public class ServidorChat extends Thread {
 
 	@Override
 	public void run() {
-		while (true) {
-			try {
-				this.client = server.accept();
+		try {
+			while (true) {
+				Socket socketCliente = this.server.accept();
+				
+				new TelaChat(socketCliente, TelaChat.TpTela.SERVIDOR, meuNome);
 
-				// Teste: Por hora, o server apenas recebe mensagems
-				MonitorChatConsole monitor = new MonitorChatConsole(this.client);
-				monitor.start();
-			} catch (IOException e) {
-				e.printStackTrace();
+				System.out.println("Socket no servidor: " + socketCliente);
+
 			}
+		} catch (Exception e) {
+			System.out.printf(e.getMessage());
 		}
 	}
 
 	public Socket getClient() {
-		return this.client;
+		return this.cliente;
 	}
 }
