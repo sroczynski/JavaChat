@@ -7,6 +7,11 @@ import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.net.Socket;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -97,14 +102,15 @@ public class Main extends JFrame implements WindowListener {
 		}
 
 		ServidorChat servidor = ServidorChat.getInstance();
-		
+
 		if (!servidor.isAlive()) {
 			try {
 				servidor.inicia(1710, nome.getText());
 				btn.setText("Finalizar Servidor");
 				btn_de_conexao.setEnabled(false);
 			} catch (Exception e) {
-				JOptionPane.showMessageDialog(this,"Não foi possível iniciar o chat -> " + e.getMessage());
+				JOptionPane.showMessageDialog(this,
+						"Não foi possível iniciar o chat -> " + e.getMessage());
 			}
 		} else {
 			btn.setText("Iniciar Servidor");
@@ -116,7 +122,7 @@ public class Main extends JFrame implements WindowListener {
 	/*
 	 * Método MAIN - início do programa
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnsupportedAudioFileException, IOException, LineUnavailableException{
 
 		System.out.println("Início");
 		new Main();

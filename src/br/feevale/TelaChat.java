@@ -11,7 +11,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.URL;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -46,6 +52,8 @@ public class TelaChat extends JFrame {
 	 */
 
 	public JFileChooser fc;
+	public JFileChooser musica1;
+	public JFileChooser musica2;
 	public String file;
 	private Socket socket;
 	private String meuNome;
@@ -128,8 +136,8 @@ public class TelaChat extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				JOptionPane
-						.showMessageDialog(null, "Chamar atenção do usuário");
+
+				chamaAtencao();
 			}
 		});
 
@@ -196,21 +204,21 @@ public class TelaChat extends JFrame {
 		fc = new JFileChooser();
 		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		int returnVal = fc.showOpenDialog(TelaChat.this);
-		
+
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			
+
 			File file = fc.getSelectedFile();
-			
+
 			mensagem.setText(file.getName());
 
 			int confirma = JOptionPane.showConfirmDialog(null,
-					"Deseja enviar o arquivo:" + file.getName(),
-					"Atenção", JOptionPane.YES_NO_OPTION);
+					"Deseja enviar o arquivo:" + file.getName(), "Atenção",
+					JOptionPane.YES_NO_OPTION);
 
 			if (confirma == JOptionPane.YES_OPTION) {
-				
+
 				System.out.println(file);
-				
+
 				try {
 					JSONObject obj = new JSONObject();
 					obj.put("tpTransacao", 3);
@@ -223,10 +231,9 @@ public class TelaChat extends JFrame {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-				
-				
+
 			} else {
-				
+
 				mensagem.setText(null);
 				mensagem.requestFocus();
 			}
@@ -287,9 +294,9 @@ public class TelaChat extends JFrame {
 	 * Trata arquivo a receber
 	 */
 	public void trataArquivo(JSONObject obj) throws JSONException {
-		
+
 		File file = (File) obj.get("Arquivo");
-				
+
 		int confirma = JOptionPane.showConfirmDialog(null,
 				"Deseja receber o arquivo" + file.getName(), "Atenção",
 				JOptionPane.YES_NO_OPTION);
@@ -299,7 +306,7 @@ public class TelaChat extends JFrame {
 
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 
-				//File file = fc.getSelectedFile();
+				// File file = fc.getSelectedFile();
 
 				escreveNoLog(outroNome + ": " + file.getName() + "." + "/n");
 
@@ -313,4 +320,25 @@ public class TelaChat extends JFrame {
 		escreveNoLog(outroNome + ": " + mensagem);
 	}
 
+	public void chamaAtencao() {
+		try {
+			// Open an audio input stream.
+			URL url = this
+					.getClass()
+					.getClassLoader()
+					.getResource("C:/Users/nicolasvinicius/Desktop/sw_main.wav");
+			AudioInputStream audioIn = AudioSystem.getAudioInputStream(url);
+			// Get a sound clip resource.
+			Clip clip = AudioSystem.getClip();
+			// Open audio clip and load samples from the audio input stream.
+			clip.open(audioIn);
+			clip.start();
+		} catch (UnsupportedAudioFileException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (LineUnavailableException e) {
+			e.printStackTrace();
+		}
+	}
 }
