@@ -1,5 +1,5 @@
 package br.feevale;
-	
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
@@ -11,11 +11,13 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-	/**
-	 * Porta utilizada: 6789
-	 * @author nicolasvinicius
-	 *
-	 */
+
+/**
+ * Porta utilizada: 6789
+ * 
+ * @author nicolasvinicius
+ * 
+ */
 public class Main extends JFrame implements WindowListener {
 
 	/**
@@ -24,6 +26,7 @@ public class Main extends JFrame implements WindowListener {
 	private static final long serialVersionUID = 1L;
 
 	private JTextField nome;
+	private JButton btn_conecta;
 
 	public Main() {
 
@@ -43,7 +46,7 @@ public class Main extends JFrame implements WindowListener {
 			@Override
 			public void actionPerformed(ActionEvent ev) {
 				try {
-					controlaServidor( (JButton) ev.getSource());
+					controlaServidor((JButton) ev.getSource(), btn_conecta);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -51,11 +54,11 @@ public class Main extends JFrame implements WindowListener {
 			}
 		});
 
-		btn = new JButton("Conectar");
-		btn.setBounds(30, 110, 150, 25);
-		getContentPane().add(btn);
+		btn_conecta = new JButton("Conectar");
+		btn_conecta.setBounds(30, 110, 150, 25);
+		getContentPane().add(btn_conecta);
 
-		btn.addActionListener(new ActionListener() {
+		btn_conecta.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent evt) {
 				conectar();
@@ -68,18 +71,23 @@ public class Main extends JFrame implements WindowListener {
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 	}
 
+	/*
+	 * Fim do construtor, início dos métodos para conexão entre outros.
+	 */
 	protected void conectar() {
 
 		try {
-			Socket socket = new Socket("localhost", 6789);
+			Socket socket = new Socket("localhost", 1710);
 			new TelaChat(socket, TelaChat.TpTela.CLIENTE, nome.getText());
 			System.out.println("Meu socket: " + socket);
 		} catch (Exception e) {
-			JOptionPane.showMessageDialog(this, "Não foi possível conectar -> " + e.getMessage());
+			JOptionPane.showMessageDialog(this, "Não foi possível conectar -> "
+					+ e.getMessage());
 		}
 	}
 
-	public void controlaServidor(JButton btn) throws IOException {
+	public void controlaServidor(JButton btn, JButton btn_de_conexao)
+			throws IOException {
 
 		if (nome.getText().trim().length() == 0) {
 			JOptionPane.showMessageDialog(this,
@@ -87,31 +95,31 @@ public class Main extends JFrame implements WindowListener {
 			nome.requestFocusInWindow();
 			return;
 		}
-		// Pega instância da classe ServidorChat que é um Singleton
+
 		ServidorChat servidor = ServidorChat.getInstance();
 		
 		if (!servidor.isAlive()) {
 			try {
-				servidor.inicia(6789);
+				servidor.inicia(1710, nome.getText());
 				btn.setText("Finalizar Servidor");
+				btn_de_conexao.setEnabled(false);
 			} catch (Exception e) {
-				JOptionPane.showMessageDialog(this,
-						"Não foi possível iniciar o chat -> " + e.getMessage());
+				JOptionPane.showMessageDialog(this,"Não foi possível iniciar o chat -> " + e.getMessage());
 			}
-		}else{
+		} else {
 			btn.setText("Iniciar Servidor");
+			btn_de_conexao.setEnabled(true);
 			servidor.finaliza();
 		}
 	}
 
+	/*
+	 * Método MAIN - início do programa
+	 */
 	public static void main(String[] args) {
 
-		System.out.println("oi");
+		System.out.println("Início");
 		new Main();
-	}
-
-	@Override
-	public void windowActivated(WindowEvent e) {
 	}
 
 	@Override
@@ -127,6 +135,10 @@ public class Main extends JFrame implements WindowListener {
 				e1.printStackTrace();
 			}
 		}
+	}
+
+	@Override
+	public void windowActivated(WindowEvent e) {
 	}
 
 	@Override

@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -111,25 +112,7 @@ public class TelaChat extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				fc = new JFileChooser();
-				fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-				int returnVal = fc.showOpenDialog(TelaChat.this);
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-
-					int confirma = JOptionPane.showConfirmDialog(null,
-							"Deseja enviar o arquivo:" + fc.getSelectedFile(),
-							"Atenção", JOptionPane.YES_NO_OPTION);
-
-					if (confirma == JOptionPane.YES_OPTION) {
-						// chama metodo para enviar o arquivo
-						mensagem.setText("Opening: " + fc.getSelectedFile());
-					} else {
-
-						mensagem.requestFocus(); // volta o foco para o campo de
-													// mensagem
-					}
-				}
-
+				enviaArquivo();
 			}
 		});
 
@@ -181,6 +164,7 @@ public class TelaChat extends JFrame {
 
 			dos.writeUTF(obj.toString());
 			os.flush();
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -207,42 +191,45 @@ public class TelaChat extends JFrame {
 		}
 	}
 
-	protected void enviaMensagemBrizola() {
+	private void enviaArquivo() {
 
-		String mensagemAEnviar = mensagem.getText();
+		fc = new JFileChooser();
+		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		int returnVal = fc.showOpenDialog(TelaChat.this);
+		
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			
+			File file = fc.getSelectedFile();
+			
+			mensagem.setText(file.getName());
 
-		mensagem.setText(null);
-		mensagem.requestFocusInWindow();
+			int confirma = JOptionPane.showConfirmDialog(null,
+					"Deseja enviar o arquivo:" + file.getName(),
+					"Atenção", JOptionPane.YES_NO_OPTION);
 
-		try {
-			OutputStream os = socket.getOutputStream();
+			if (confirma == JOptionPane.YES_OPTION) {
+				
+				System.out.println(file);
+				
+				try {
+					JSONObject obj = new JSONObject();
+					obj.put("tpTransacao", 3);
+					obj.put("arquivo", file);
 
-			for (byte b : mensagemAEnviar.getBytes()) {
-				os.write(b);
+					enviaTransacao(obj);
+
+					escreveNoLog(meuNome + ": " + file.getName());
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				
+			} else {
+				
+				mensagem.setText(null);
+				mensagem.requestFocus();
 			}
-			os.write(-1);
-			os.flush();
-
-			escreveNoLog("Enviei: " + mensagemAEnviar);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	protected void enviaMensagemSchneider() {
-
-		String mensagemAEnviar = mensagem.getText();
-
-		mensagem.setText(null);
-		mensagem.requestFocusInWindow();
-
-		try {
-			socket.getOutputStream().write(mensagemAEnviar.getBytes().length);
-			socket.getOutputStream().write(mensagemAEnviar.getBytes());
-
-			escreveNoLog("Enviei: " + mensagemAEnviar);
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 
@@ -252,6 +239,7 @@ public class TelaChat extends JFrame {
 		public void run() {
 			try {
 				InputStream is = socket.getInputStream();
+
 				DataInputStream dis = new DataInputStream(is);
 
 				while (isVisible()) {
@@ -270,84 +258,10 @@ public class TelaChat extends JFrame {
 					case 2:
 						trataMensagem(obj);
 						break;
+					case 3:
+						trataArquivo(obj);
 					}
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private class LeitorDeSocketData extends Thread {
-
-		@Override
-		public void run() {
-			try {
-				InputStream is = socket.getInputStream();
-				DataInputStream dis = new DataInputStream(is);
-
-				while (isVisible()) {
-
-					String mensagem = dis.readUTF();
-					escreveNoLog("Recebi: " + mensagem);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private class LeitorDeSocketBrizola extends Thread {
-
-		@Override
-		public void run() {
-			try {
-				InputStream is = socket.getInputStream();
-				StringBuilder buffer = new StringBuilder();
-
-				while (isVisible()) {
-
-					if (is.available() > 0) {
-						System.out.println("A");
-
-						int ch;
-						while ((ch = is.read()) != 255) {
-							System.out.println("Recebi: " + ((char) ch) + " "
-									+ ch);
-							buffer.append((char) ch);
-						}
-
-						String mensagem = buffer.toString();
-						escreveNoLog("Recebi: " + mensagem);
-					}
-
-					sleep(50);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private class LeitorDeSocketSchneider extends Thread {
-
-		@Override
-		public void run() {
-			try {
-
-				while (isVisible()) {
-					System.out.println("A");
-
-					int tam = socket.getInputStream().read();
-					byte[] buffer = new byte[tam];
-					socket.getInputStream().read(buffer);
-
-					String mensagem = new String(buffer);
-
-					escreveNoLog("Recebi: " + mensagem);
-
-				}
-				sleep(10);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -368,4 +282,35 @@ public class TelaChat extends JFrame {
 		String mensagem = obj.getString("msg");
 		escreveNoLog(outroNome + ": " + mensagem);
 	}
+
+	/*
+	 * Trata arquivo a receber
+	 */
+	public void trataArquivo(JSONObject obj) throws JSONException {
+		
+		File file = (File) obj.get("Arquivo");
+				
+		int confirma = JOptionPane.showConfirmDialog(null,
+				"Deseja receber o arquivo" + file.getName(), "Atenção",
+				JOptionPane.YES_NO_OPTION);
+		if (confirma == JOptionPane.YES_OPTION) {
+
+			int returnVal = fc.showSaveDialog(TelaChat.this);
+
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+
+				//File file = fc.getSelectedFile();
+
+				escreveNoLog(outroNome + ": " + file.getName() + "." + "/n");
+
+			} else {
+				escreveNoLog(outroNome + ": " + "Cancelou recebimento");
+			}
+		}
+
+		String mensagem = obj.getString("msg");
+
+		escreveNoLog(outroNome + ": " + mensagem);
+	}
+
 }

@@ -18,6 +18,8 @@ public class ServidorChat extends Thread {
 	private static ServidorChat instance;
 
 	private Integer porta;
+	
+	private String nomeServidor;
 
 	private Socket cliente;
 
@@ -46,15 +48,13 @@ public class ServidorChat extends Thread {
 	 * Inicia a thread para escutar a porta
 	 * 
 	 * @param int porta
+	 * @param String nomeServidor
 	 */
-	public void inicia(int porta) {
+	public void inicia(int porta, String nomeServidor) throws IOException {
 		this.porta = porta;
+		this.nomeServidor = nomeServidor;
 
-		try {
-			server = new ServerSocket(this.porta);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		server = new ServerSocket(this.porta);
 		this.start();
 	}
 
@@ -73,10 +73,11 @@ public class ServidorChat extends Thread {
 	public void run() {
 		try {
 			while (true) {
+				// Espera uma conexão de socket
 				Socket socketCliente = this.server.accept();
 				
-				new TelaChat(socketCliente, TelaChat.TpTela.SERVIDOR, meuNome);
-
+				//Após receber a conexão cria uma janela de chat para o servidor
+				new TelaChat(socketCliente, TelaChat.TpTela.SERVIDOR,nomeServidor);
 				System.out.println("Socket no servidor: " + socketCliente);
 
 			}
