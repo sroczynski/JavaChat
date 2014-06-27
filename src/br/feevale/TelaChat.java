@@ -120,7 +120,7 @@ public class TelaChat extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				enviaArquivo();
+				perguntaEnviarArquivo();
 			}
 		});
 
@@ -199,8 +199,8 @@ public class TelaChat extends JFrame {
 		}
 	}
 
-	private void enviaArquivo() {
-
+	private void perguntaEnviarArquivo() {
+		// TODO Auto-generated method stub
 		fc = new JFileChooser();
 		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		int returnVal = fc.showOpenDialog(TelaChat.this);
@@ -209,35 +209,23 @@ public class TelaChat extends JFrame {
 
 			File file = fc.getSelectedFile();
 
-			mensagem.setText(file.getName());
+			try {
+				JSONObject obj = new JSONObject();
+				obj.put("tpTransacao", 3);
+				obj.put("arquivo", file.getName());
+				obj.put("tamanho", file.length());
 
-			int confirma = JOptionPane.showConfirmDialog(null,
-					"Deseja enviar o arquivo:" + file.getName(), "Atenção",
-					JOptionPane.YES_NO_OPTION);
+				enviaTransacao(obj);
 
-			if (confirma == JOptionPane.YES_OPTION) {
-
-				System.out.println(file);
-
-				try {
-					JSONObject obj = new JSONObject();
-					obj.put("tpTransacao", 3);
-					obj.put("arquivo", file);
-
-					enviaTransacao(obj);
-
-					escreveNoLog(meuNome + ": " + file.getName());
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
-			} else {
-
-				mensagem.setText(null);
-				mensagem.requestFocus();
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
+	}
+
+	private void respondeEnviarArquivo() {
+		// TODO Auto-generated method stub
+
 	}
 
 	private class LeitorDeSocket extends Thread {
@@ -266,13 +254,26 @@ public class TelaChat extends JFrame {
 						trataMensagem(obj);
 						break;
 					case 3:
-						trataArquivo(obj);
+						chamaAtencao();
+						break;
+					case 4:
+						perguntaEnviarArquivo();
+						break;
+					case 5:
+						respondeEnviarArquivo();
+						break;
+
 					}
+
+					trataArquivo(obj);
+					break;
+
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
+
 	}
 
 	private void escreveNoLog(String msg) {
@@ -340,5 +341,63 @@ public class TelaChat extends JFrame {
 		} catch (LineUnavailableException e) {
 			e.printStackTrace();
 		}
+		
+		
+
+		private void trataPerguntaEnviarArquivo(JSONObject obj) {
+			// TODO Auto-generated method stub
+
+				String arquivo = obj.getString("arquivo");
+				String tamanho = obj.getString("tamanho");
+
+				respostaEnviarArquivo();
+
+				String mensagem = obj.getString("msg");
+
+				escreveNoLog(outroNome + ": " + mensagem);
+		}
+		
+		
+		private void respostaEnviarArquivo() {
+			// TODO Auto-generated method stub
+			int confirma = JOptionPane.showConfirmDialog(null,
+					"Deseja receber o arquivo/n" + arquivo + "/n " +  tamanho , "Atenção",
+					JOptionPane.YES_NO_OPTION);
+			
+			if (confirma == JOptionPane.YES_OPTION) {
+				try {
+					JSONObject obj = new JSONObject();
+					obj.put("tpTransacao", 6);
+					obj.put("resposta", true);
+					obj.put("porta", 6666)
+
+					enviaTransacao(obj);
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}else{
+				try {
+					JSONObject obj = new JSONObject();
+					obj.put("tpTransacao", 6);
+					obj.put("resposta", false);
+										
+					enviaTransacao(obj);
+				
+				} catch (Exception e) {
+						e.printStackTrace();
+				}
+			}			
+		}
+		
+		private void trataRespostaEnviarArquivo(JSONObject obj) {
+			// TODO Auto-generated method stub
+			boolean resposta = obj.get("resposta");
+			if(resposta = true){
+				int porta = obj.getInt("porta");
+				
+			}
+		}
+	
 	}
 }
