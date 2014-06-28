@@ -4,6 +4,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -29,7 +31,7 @@ import javax.swing.JTextField;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class TelaChat extends JFrame {
+public class TelaChat extends JFrame  implements WindowListener{
 
 	/**
 	 * 
@@ -65,8 +67,7 @@ public class TelaChat extends JFrame {
 	 * @param meuNome
 	 * @throws JSONException
 	 */
-	public TelaChat(Socket socket, TpTela tipo, String meuNome)
-			throws JSONException {
+	public TelaChat(Socket socket, TpTela tipo, String meuNome) throws JSONException {
 
 		this.socket = socket;
 		this.meuNome = meuNome;
@@ -97,7 +98,9 @@ public class TelaChat extends JFrame {
 			public void keyTyped(KeyEvent e) {
 
 				if (e.getKeyChar() == KeyEvent.VK_ENTER) {
+					
 					enviaMensagem();
+				
 				}
 			}
 
@@ -109,6 +112,8 @@ public class TelaChat extends JFrame {
 			public void keyPressed(KeyEvent e) {
 			}
 		});
+		
+		
 		/*
 		 * botão para enviar arquivo
 		 */
@@ -120,7 +125,7 @@ public class TelaChat extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				perguntaEnviarArquivo();
+				EnviarArquivo();
 			}
 		});
 
@@ -152,7 +157,14 @@ public class TelaChat extends JFrame {
 		} catch (InterruptedException e1) {
 		}
 
+
+		informaDesconexao();
+		
+		
+		
+		
 		enviaHandshake();
+		
 	}
 
 	private void enviaHandshake() throws JSONException {
@@ -199,7 +211,9 @@ public class TelaChat extends JFrame {
 		}
 	}
 
-	private void perguntaEnviarArquivo() {
+	
+	
+	private void EnviarArquivo() {
 		// TODO Auto-generated method stub
 		fc = new JFileChooser();
 		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -211,7 +225,7 @@ public class TelaChat extends JFrame {
 
 			try {
 				JSONObject obj = new JSONObject();
-				obj.put("tpTransacao", 3);
+				obj.put("tpTransacao", 5);
 				obj.put("arquivo", file.getName());
 				obj.put("tamanho", file.length());
 
@@ -222,11 +236,66 @@ public class TelaChat extends JFrame {
 			}
 		}
 	}
+	
+	private void respondeEnviarArquivo(boolean receber) {
 
-	private void respondeEnviarArquivo() {
-		// TODO Auto-generated method stub
+		try {
+			JSONObject obj = new JSONObject();
+			obj.put("tpTransacao", 6);
+			obj.put("resposta", receber);
+			
+			enviaTransacao(obj);
 
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	
 	}
+	
+	private void trataResposta(JSONObject obj) throws JSONException{
+
+		boolean resposta = obj.getBoolean("resposta");
+		
+		String mensagem;
+		
+		if (resposta == true){
+
+			mensagem = "Confirmou Receber o Arquivo";
+			
+			try {
+				JSONObject objMen = new JSONObject();
+				objMen.put("tpTransacao", 2);
+				objMen.put("msg", mensagem);
+
+				enviaTransacao(objMen);
+
+				escreveNoLog(meuNome + ": " + mensagem);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+		} else {
+
+			mensagem = "Confirmou Receber o Arquivo";
+			
+			try {
+				JSONObject objMen = new JSONObject();
+				objMen.put("tpTransacao", 2);
+				objMen.put("msg", mensagem);
+
+				enviaTransacao(objMen);
+
+				escreveNoLog(meuNome + ": " + mensagem);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			
+		}
+		
+				
+	}
+	
 
 	private class LeitorDeSocket extends Thread {
 
@@ -257,16 +326,14 @@ public class TelaChat extends JFrame {
 						chamaAtencao();
 						break;
 					case 4:
-						perguntaEnviarArquivo();
-						break;
+						informaDesconexao();
 					case 5:
-						respondeEnviarArquivo();
+						perguntaEnviarArquivo(obj);
 						break;
-
+					case 6:
+						trataResposta(obj);
+						break;
 					}
-
-					trataArquivo(obj);
-					break;
 
 				}
 			} catch (Exception e) {
@@ -281,21 +348,71 @@ public class TelaChat extends JFrame {
 		log.append("\n");
 	}
 
+	public void informaDesconexao() {
+		// TODO Auto-generated method stub
+		try {
+			JSONObject obj = new JSONObject();
+			obj.put("tpTransacao", 4);
+			
+			enviaTransacao(obj);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	/*
+	 * Trata handshake
+	 */
 	public void trataHandshake(JSONObject obj) throws JSONException {
 		outroNome = obj.getString("meuNome");
 	}
 
+	
+	
+	/*
+	 * Trata mensagem
+	 */
 	public void trataMensagem(JSONObject obj) throws JSONException {
 
 		String mensagem = obj.getString("msg");
 		escreveNoLog(outroNome + ": " + mensagem);
 	}
+	
+	
+	
+	
+	/*
+	 * pergunta se deseja aceitar arquivo;
+	 */
+	private void perguntaEnviarArquivo(JSONObject obj) throws JSONException {
+		
+		String arquivo = obj.getString("arquivo");
+		String tamanho = obj.getString("tamanho");
+		
+		int confirma = JOptionPane.showConfirmDialog(null,
+			"Deseja receber o arquivo /n" + arquivo + "/n" + tamanho, "Atenção",
+			JOptionPane.YES_NO_OPTION);
+		
+		if (confirma == JOptionPane.YES_OPTION) {
 
+			int returnVal = fc.showSaveDialog(TelaChat.this);
+
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				
+				respondeEnviarArquivo(true);
+			
+			} else {
+			
+				respondeEnviarArquivo(false);
+			}
+		}
+	}
+	
 	/*
 	 * Trata arquivo a receber
 	 */
 	public void trataArquivo(JSONObject obj) throws JSONException {
-
+		
 		File file = (File) obj.get("Arquivo");
 
 		int confirma = JOptionPane.showConfirmDialog(null,
@@ -341,63 +458,113 @@ public class TelaChat extends JFrame {
 		} catch (LineUnavailableException e) {
 			e.printStackTrace();
 		}
-		
-		
-
-		private void trataPerguntaEnviarArquivo(JSONObject obj) {
-			// TODO Auto-generated method stub
-
-				String arquivo = obj.getString("arquivo");
-				String tamanho = obj.getString("tamanho");
-
-				respostaEnviarArquivo();
-
-				String mensagem = obj.getString("msg");
-
-				escreveNoLog(outroNome + ": " + mensagem);
-		}
-		
-		
-		private void respostaEnviarArquivo() {
-			// TODO Auto-generated method stub
-			int confirma = JOptionPane.showConfirmDialog(null,
-					"Deseja receber o arquivo/n" + arquivo + "/n " +  tamanho , "Atenção",
-					JOptionPane.YES_NO_OPTION);
-			
-			if (confirma == JOptionPane.YES_OPTION) {
-				try {
-					JSONObject obj = new JSONObject();
-					obj.put("tpTransacao", 6);
-					obj.put("resposta", true);
-					obj.put("porta", 6666)
-
-					enviaTransacao(obj);
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}else{
-				try {
-					JSONObject obj = new JSONObject();
-					obj.put("tpTransacao", 6);
-					obj.put("resposta", false);
-										
-					enviaTransacao(obj);
-				
-				} catch (Exception e) {
-						e.printStackTrace();
-				}
-			}			
-		}
-		
-		private void trataRespostaEnviarArquivo(JSONObject obj) {
-			// TODO Auto-generated method stub
-			boolean resposta = obj.get("resposta");
-			if(resposta = true){
-				int porta = obj.getInt("porta");
-				
-			}
-		}
-	
 	}
+		
+
+	/*private void trataPerguntaEnviarArquivo(JSONObject obj) {
+		// TODO Auto-generated method stub
+
+		String arquivo = obj.getString("arquivo");
+		String tamanho = obj.getString("tamanho");
+
+		respostaEnviarArquivo(arquivo, tamanho);
+
+		String mensagem = obj.getString("msg");
+
+		escreveNoLog(outroNome + ": " + mensagem);
+		
+	}*/
+		
+		
+	
+	private void respostaEnviarArquivo(String nome, String tamanho) {
+		// TODO Auto-generated method stub
+		
+		int confirma = JOptionPane.showConfirmDialog(null,
+				"Deseja receber o arquivo/n" + arquivo + "/n " +  tamanho , "Atenção",
+				JOptionPane.YES_NO_OPTION);
+		
+		if (confirma == JOptionPane.YES_OPTION) {
+			try {
+				JSONObject obj = new JSONObject();
+				obj.put("tpTransacao", 6);
+				obj.put("resposta", true);
+
+				enviaTransacao(obj);
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}else{
+			try {
+				JSONObject obj = new JSONObject();
+				obj.put("tpTransacao", 6);
+				obj.put("resposta", false);
+									
+				enviaTransacao(obj);
+			
+			} catch (Exception e) {
+					e.printStackTrace();
+			}
+		}			
+	}
+		
+	/*private void trataRespostaEnviarArquivo(JSONObject obj) {
+		// TODO Auto-generated method stub
+		boolean resposta = obj.getBoolean("resposta");
+		if(resposta = true){
+			int porta = obj.getInt("porta");
+			
+		}
+		
+
+	}*/
+
+	@Override
+	public void windowActivated(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowClosed(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowClosing(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+		
+		
+		
+	}
+
+	@Override
+	public void windowDeactivated(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeiconified(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowIconified(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowOpened(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+	
 }
+
+
