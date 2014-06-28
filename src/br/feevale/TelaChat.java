@@ -6,9 +6,11 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,6 +30,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
+import javazoom.jl.player.Player;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -54,6 +57,7 @@ public class TelaChat extends JFrame {
 	 */
 
 	public JFileChooser fc;
+	public File fileArq;
 	public String file;
 	private Socket socket;
 	private String meuNome;
@@ -65,7 +69,8 @@ public class TelaChat extends JFrame {
 	 * @param meuNome
 	 * @throws JSONException
 	 */
-	public TelaChat(Socket socket, TpTela tipo, String meuNome) throws JSONException {
+	public TelaChat(Socket socket, TpTela tipo, String meuNome)
+			throws JSONException {
 
 		this.socket = socket;
 		this.meuNome = meuNome;
@@ -96,9 +101,9 @@ public class TelaChat extends JFrame {
 			public void keyTyped(KeyEvent e) {
 
 				if (e.getKeyChar() == KeyEvent.VK_ENTER) {
-					
+
 					enviaMensagem();
-				
+
 				}
 			}
 
@@ -110,8 +115,7 @@ public class TelaChat extends JFrame {
 			public void keyPressed(KeyEvent e) {
 			}
 		});
-		
-		
+
 		/*
 		 * botão para enviar arquivo
 		 */
@@ -122,9 +126,9 @@ public class TelaChat extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				
+
 				EnviarArquivo();
-			
+
 			}
 		});
 
@@ -147,9 +151,8 @@ public class TelaChat extends JFrame {
 
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setVisible(true);
-		
+
 		addWindowListener(new FechaJanelaListener());
-		
 
 		System.out.println("Iniciando...");
 		new LeitorDeSocket().start();
@@ -159,9 +162,8 @@ public class TelaChat extends JFrame {
 		} catch (InterruptedException e1) {
 		}
 
-
 		enviaHandshake();
-		
+
 	}
 
 	private void enviaHandshake() throws JSONException {
@@ -207,24 +209,36 @@ public class TelaChat extends JFrame {
 			e.printStackTrace();
 		}
 	}
+	
+	public void chamaAtencao(){
+		try {
+			JSONObject obj = new JSONObject();
+			obj.put("tpTransacao", 3);
+			
+			enviaTransacao(obj);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	
+	}
 
-	
-	
 	private void EnviarArquivo() {
 		// TODO Auto-generated method stub
 		fc = new JFileChooser();
 		fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
 		int returnVal = fc.showOpenDialog(TelaChat.this);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 
-			File file = fc.getSelectedFile();
+			fileArq = fc.getSelectedFile();
 
 			try {
 				JSONObject obj = new JSONObject();
 				obj.put("tpTransacao", 5);
-				obj.put("arquivo", file.getName());
-				obj.put("tamanho", file.length());
+				obj.put("arquivo", fileArq.getName());
+				obj.put("tamanho", fileArq.length());
 
 				enviaTransacao(obj);
 
@@ -233,48 +247,71 @@ public class TelaChat extends JFrame {
 			}
 		}
 	}
-	
+
 	private void respondeEnviarArquivo(boolean receber) {
 
 		try {
 			JSONObject obj = new JSONObject();
 			obj.put("tpTransacao", 6);
 			obj.put("resposta", receber);
+			obj.put("file", fileArq);
 			
 			enviaTransacao(obj);
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	
+
 	}
-	
-	private void trataResposta(JSONObject obj) throws JSONException{
+
+	private void trataResposta(JSONObject obj) throws JSONException {
 
 		boolean resposta = obj.getBoolean("resposta");
 		
 		String mensagem;
-		
-		if (resposta == true){
-
-			mensagem = "Confirmou Receber o Arquivo";
+		if (resposta == true) {
 			
-			try {
-				JSONObject objMen = new JSONObject();
-				objMen.put("tpTransacao", 2);
-				objMen.put("msg", mensagem);
-
-				enviaTransacao(objMen);
-
-				escreveNoLog(meuNome + ": " + mensagem);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			fileArq = (File) obj.getFile("file");
 			
+			fc.setSelectedFile (fileArq);
+
+		    int result = fc.showSaveDialog (this);
+				
+		    if (result == JFileChooser.APPROVE_OPTION) {
+		         
+		  		mensagem = "Confirmou Receber o Arquivo";
+
+				try {
+					JSONObject objMen = new JSONObject();
+					objMen.put("tpTransacao", 2);
+					objMen.put("msg", mensagem);
+					
+					enviaTransacao(objMen);
+	
+					escreveNoLog(meuNome + ": " + mensagem);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+		    }else{
+		    	mensagem = "Erro no envio do arquivo!";
+
+				try {
+					JSONObject objMen = new JSONObject();
+					objMen.put("tpTransacao", 2);
+					objMen.put("msg", mensagem);
+					
+					enviaTransacao(objMen);
+	
+					escreveNoLog(meuNome + ": " + mensagem);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+		    }
+
 		} else {
 
-			mensagem = "Confirmou Receber o Arquivo";
-			
+			mensagem = "Não confirmou receber o arquivo";
+
 			try {
 				JSONObject objMen = new JSONObject();
 				objMen.put("tpTransacao", 2);
@@ -286,13 +323,10 @@ public class TelaChat extends JFrame {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			
-			
-		}
-		
+
+		}		
 				
 	}
-	
 
 	private class LeitorDeSocket extends Thread {
 
@@ -320,7 +354,7 @@ public class TelaChat extends JFrame {
 						trataMensagem(obj);
 						break;
 					case 3:
-						chamaAtencao();
+						tratachamaAtencao();
 						break;
 					case 4:
 						trataDesconexao();
@@ -351,29 +385,29 @@ public class TelaChat extends JFrame {
 		try {
 			JSONObject obj = new JSONObject();
 			obj.put("tpTransacao", 4);
-			
+
 			enviaTransacao(obj);
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/*
 	 * trata desconexão de algum usuário
 	 */
-	
-	public void trataDesconexao(){
-		
-		JOptionPane.showMessageDialog(null, "Usuário " + this.outroNome + " desconectou");
-		//Desabilida os campos de ação para o usuário
+
+	public void trataDesconexao() {
+
+		JOptionPane.showMessageDialog(null, "Usuário " + this.outroNome
+				+ " desconectou");
+		// Desabilida os campos de ação para o usuário
 		this.mensagem.setEnabled(false);
 		this.arquivo.setEnabled(false);
 		this.atencao.setEnabled(false);
-		
+
 	}
-	
-		
+
 	/*
 	 * Trata handshake
 	 */
@@ -381,8 +415,6 @@ public class TelaChat extends JFrame {
 		outroNome = obj.getString("meuNome");
 	}
 
-	
-	
 	/*
 	 * Trata mensagem
 	 */
@@ -391,42 +423,35 @@ public class TelaChat extends JFrame {
 		String mensagem = obj.getString("msg");
 		escreveNoLog(outroNome + ": " + mensagem);
 	}
-	
-	
-	
-	
+
 	/*
 	 * pergunta se deseja aceitar arquivo;
 	 */
 	private void perguntaEnviarArquivo(JSONObject obj) throws JSONException {
-		
+
 		String arquivo = obj.getString("arquivo");
-		String tamanho = obj.getString("tamanho");
-		
+		Long tamanho = obj.getLong("tamanho");
+
 		int confirma = JOptionPane.showConfirmDialog(null,
-			"Deseja receber o arquivo /n" + arquivo + "/n" + tamanho, "Atenção",
-			JOptionPane.YES_NO_OPTION);
-		
+				"Deseja receber o arquivo \n nome: " + arquivo + "\n Tamanho: "
+						+ tamanho, "Atenção", JOptionPane.YES_NO_OPTION);
+
 		if (confirma == JOptionPane.YES_OPTION) {
 
-			int returnVal = fc.showSaveDialog(TelaChat.this);
+			respondeEnviarArquivo(true);
 
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				
-				respondeEnviarArquivo(true);
-			
-			} else {
-			
-				respondeEnviarArquivo(false);
-			}
+		} else {
+
+			respondeEnviarArquivo(false);
 		}
+
 	}
-	
+
 	/*
 	 * Trata arquivo a receber
 	 */
 	public void trataArquivo(JSONObject obj) throws JSONException {
-		
+
 		File file = (File) obj.get("Arquivo");
 
 		int confirma = JOptionPane.showConfirmDialog(null,
@@ -451,37 +476,25 @@ public class TelaChat extends JFrame {
 
 		escreveNoLog(outroNome + ": " + mensagem);
 	}
-
-	public void chamaAtencao() {
-		try {
-			// Open an audio input stream.
-			URL url = this
-					.getClass()
-					.getClassLoader()
-					.getResource("C:/Users/nicolasvinicius/Desktop/sw_main.wav");
-			AudioInputStream audioIn = AudioSystem.getAudioInputStream(url);
-			// Get a sound clip resource.
-			Clip clip = AudioSystem.getClip();
-			// Open audio clip and load samples from the audio input stream.
-			clip.open(audioIn);
-			clip.start();
-		} catch (UnsupportedAudioFileException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (LineUnavailableException e) {
-			e.printStackTrace();
-		}
+	
+	public void tratachamaAtencao() {
+		//String com o caminho do arquivo MP3 a ser tocado
+	    String path = "sw_main.mp3";
+	    //Instanciação de um objeto File com o arquivo MP3
+	    File mp3File = new File(path);
+	    //Instanciação do Objeto MP3, a qual criamos a classe.
+	    MP3 musica = new MP3(mp3File);
+	    //Finalmente a chamada do método que toca a música
+	    musica.play();
 	}
-	
-	
+
 	private void respostaEnviarArquivo(String nome, String tamanho) {
 		// TODO Auto-generated method stub
-		
+
 		int confirma = JOptionPane.showConfirmDialog(null,
-				"Deseja receber o arquivo/n" + arquivo + "/n " +  tamanho , "Atenção",
-				JOptionPane.YES_NO_OPTION);
-		
+				"Deseja receber o arquivo/n" + arquivo + "/n " + tamanho,
+				"Atenção", JOptionPane.YES_NO_OPTION);
+
 		if (confirma == JOptionPane.YES_OPTION) {
 			try {
 				JSONObject obj = new JSONObject();
@@ -493,43 +506,32 @@ public class TelaChat extends JFrame {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		}else{
+		} else {
 			try {
 				JSONObject obj = new JSONObject();
 				obj.put("tpTransacao", 6);
 				obj.put("resposta", false);
-									
-				enviaTransacao(obj);
-			
-			} catch (Exception e) {
-					e.printStackTrace();
-			}
-		}			
-	}
-		
-	/*private void trataRespostaEnviarArquivo(JSONObject obj) {
-		// TODO Auto-generated method stub
-		boolean resposta = obj.getBoolean("resposta");
-		if(resposta = true){
-			int porta = obj.getInt("porta");
-			
-		}
-		
 
-	}*/
+				enviaTransacao(obj);
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
 	private class FechaJanelaListener implements WindowListener {
 
 		@Override
 		public void windowActivated(WindowEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
 		public void windowClosed(WindowEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
@@ -543,26 +545,64 @@ public class TelaChat extends JFrame {
 		@Override
 		public void windowDeactivated(WindowEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
 		public void windowDeiconified(WindowEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
 		public void windowIconified(WindowEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
 		public void windowOpened(WindowEvent e) {
 			// TODO Auto-generated method stub
-			
+
 		}
-		
+
+	}
+	
+	private class MP3 {
+		  /**
+		   * Objeto para nosso arquivo MP3 a ser tocado
+		   */
+		  private File mp3;
+		  /**
+		   * Objeto Player da biblioteca jLayer. Ele tocará o arquivo
+		   * MP3
+		   */
+		  private Player player;
+		  /**
+		   * Construtor que recebe o objeto File referenciando o arquivo
+		   * MP3 a ser tocado e atribui ao atributo MP3 da classe.
+		   *
+		   * @param mp3
+		   */
+		  public MP3(File mp3) {
+		    this.mp3 = mp3;
+		  }
+		  /**
+		   * Método que toca o MP3
+		   */
+		  public void play() {
+		      try {
+		                FileInputStream fis     = new FileInputStream(mp3);
+		                BufferedInputStream bis = new BufferedInputStream(fis);
+		                this.player = new Player(bis);
+		                System.out.println("Tocando!");
+		                this.player.play();
+		                System.out.println("Terminado!");
+		            }
+		            catch (Exception e) {
+		                System.out.println("Problema ao tocar " + mp3);
+		                e.printStackTrace();
+		            }
+		     }
 	}
 }
