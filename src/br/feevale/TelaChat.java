@@ -31,7 +31,7 @@ import javax.swing.JTextField;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class TelaChat extends JFrame  implements WindowListener{
+public class TelaChat extends JFrame {
 
 	/**
 	 * 
@@ -54,8 +54,6 @@ public class TelaChat extends JFrame  implements WindowListener{
 	 */
 
 	public JFileChooser fc;
-	public JFileChooser musica1;
-	public JFileChooser musica2;
 	public String file;
 	private Socket socket;
 	private String meuNome;
@@ -73,9 +71,9 @@ public class TelaChat extends JFrame  implements WindowListener{
 		this.meuNome = meuNome;
 
 		if (tipo == TpTela.SERVIDOR) {
-			setBounds(10, 80, 500, 450);
+			setBounds(10, 80, 500, 420);
 		} else {
-			setBounds(515, 80, 500, 450);
+			setBounds(515, 80, 500, 420);
 		}
 		setTitle(meuNome);
 		setLayout(null);
@@ -124,8 +122,9 @@ public class TelaChat extends JFrame  implements WindowListener{
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO Auto-generated method stub
+				
 				EnviarArquivo();
+			
 			}
 		});
 
@@ -148,6 +147,9 @@ public class TelaChat extends JFrame  implements WindowListener{
 
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setVisible(true);
+		
+		addWindowListener(new FechaJanelaListener());
+		
 
 		System.out.println("Iniciando...");
 		new LeitorDeSocket().start();
@@ -158,11 +160,6 @@ public class TelaChat extends JFrame  implements WindowListener{
 		}
 
 
-		informaDesconexao();
-		
-		
-		
-		
 		enviaHandshake();
 		
 	}
@@ -326,7 +323,8 @@ public class TelaChat extends JFrame  implements WindowListener{
 						chamaAtencao();
 						break;
 					case 4:
-						informaDesconexao();
+						trataDesconexao();
+						break;
 					case 5:
 						perguntaEnviarArquivo(obj);
 						break;
@@ -360,6 +358,22 @@ public class TelaChat extends JFrame  implements WindowListener{
 			e.printStackTrace();
 		}
 	}
+	
+	/*
+	 * trata desconexão de algum usuário
+	 */
+	
+	public void trataDesconexao(){
+		
+		JOptionPane.showMessageDialog(null, "Usuário " + this.outroNome + " desconectou");
+		//Desabilida os campos de ação para o usuário
+		this.mensagem.setEnabled(false);
+		this.arquivo.setEnabled(false);
+		this.atencao.setEnabled(false);
+		
+	}
+	
+		
 	/*
 	 * Trata handshake
 	 */
@@ -459,23 +473,7 @@ public class TelaChat extends JFrame  implements WindowListener{
 			e.printStackTrace();
 		}
 	}
-		
-
-	/*private void trataPerguntaEnviarArquivo(JSONObject obj) {
-		// TODO Auto-generated method stub
-
-		String arquivo = obj.getString("arquivo");
-		String tamanho = obj.getString("tamanho");
-
-		respostaEnviarArquivo(arquivo, tamanho);
-
-		String mensagem = obj.getString("msg");
-
-		escreveNoLog(outroNome + ": " + mensagem);
-		
-	}*/
-		
-		
+	
 	
 	private void respostaEnviarArquivo(String nome, String tamanho) {
 		// TODO Auto-generated method stub
@@ -520,51 +518,51 @@ public class TelaChat extends JFrame  implements WindowListener{
 
 	}*/
 
-	@Override
-	public void windowActivated(WindowEvent arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+	private class FechaJanelaListener implements WindowListener {
 
-	@Override
-	public void windowClosed(WindowEvent arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+		@Override
+		public void windowActivated(WindowEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 
-	@Override
-	public void windowClosing(WindowEvent arg0) {
-		// TODO Auto-generated method stub
-		
-		
-		
-		
-	}
+		@Override
+		public void windowClosed(WindowEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 
-	@Override
-	public void windowDeactivated(WindowEvent arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+		@Override
+		public void windowClosing(WindowEvent e) {
+			TelaChat tela = (TelaChat) e.getSource();
+			tela.informaDesconexao();
+			dispose();
+			ServidorChat.getInstance().interrupt();
+		}
 
-	@Override
-	public void windowDeiconified(WindowEvent arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+		@Override
+		public void windowDeactivated(WindowEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 
-	@Override
-	public void windowIconified(WindowEvent arg0) {
-		// TODO Auto-generated method stub
-		
-	}
+		@Override
+		public void windowDeiconified(WindowEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 
-	@Override
-	public void windowOpened(WindowEvent arg0) {
-		// TODO Auto-generated method stub
+		@Override
+		public void windowIconified(WindowEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void windowOpened(WindowEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
 		
 	}
-	
 }
-
-

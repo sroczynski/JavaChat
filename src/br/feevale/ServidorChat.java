@@ -49,6 +49,7 @@ public class ServidorChat extends Thread {
 	 * 
 	 * @param int porta
 	 * @param String nomeServidor
+	 *
 	 */
 	public void inicia(int porta, String nomeServidor) throws IOException {
 		this.porta = porta;
